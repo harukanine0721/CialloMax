@@ -21,6 +21,12 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
 
+      - name: Upgrade npm for OIDC trusted publishing
+        # npm bundled with Node 22 is 10.x, which cannot exchange the GitHub
+        # OIDC token for an npm publish credential (provenance still signs, but
+        # the PUT is unauthenticated and 404s). Trusted publishing needs >=11.5.1.
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         # --include=dev forces devDependencies to install even if the runner
         # sets NODE_ENV=production (which would otherwise omit them and break
