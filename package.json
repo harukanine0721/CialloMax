@@ -11,6 +11,10 @@
     "ciallo"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harukanine0721/CialloMax.git"
+  },
   "type": "module",
   "files": [
     "index.ts",
