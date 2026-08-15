@@ -1,6 +1,6 @@
 {
   "name": "ciallomax",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "CialloMax: Ciallo welcome banner and Codex-style Max thinking ignition animation for pi.",
   "keywords": [
     "pi-package",
