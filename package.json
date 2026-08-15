@@ -1,0 +1,34 @@
+{
+  "name": "ciallomax",
+  "version": "0.1.0",
+  "description": "CialloMax: Ciallo welcome banner and Codex-style Max thinking ignition animation for pi.",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "extension",
+    "tui",
+    "animation",
+    "ciallo"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "index.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "check": "tsc --noEmit"
+  }
+}
