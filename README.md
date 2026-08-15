@@ -52,3 +52,24 @@ pi install -l /Users/nineharuka/Documents/vscodeProjects/CialloMax
 ```bash
 npm run check
 ```
+
+## 发布
+
+### 首次发布（手动，需要 OTP）
+
+```bash
+npm publish
+```
+
+账号开启了 2FA，首次发布会要求一次性密码（OTP）。
+
+### 后续发布（自动）
+
+GitHub Actions 已配置 `publish.yml`：推 `v*` tag 即自动执行类型检查并发布到 npm。
+
+```bash
+git tag v0.1.1
+git push origin v0.1.1
+```
+
+前提：在 GitHub 仓库 `Settings → Secrets and variables → Actions` 添加 `NPM_TOKEN`（npm 官网 → Access Tokens → 新建 **Automation** 类型 token，CI 用它发布可绕过 OTP）。
