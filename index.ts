@@ -6,6 +6,9 @@ const EFFECT_WIDGET_KEY = "ciallomax-max-effect";
 const FRAME_INTERVAL_MS = 33;
 const IGNITION_MS = 1600;
 const BAND_ROWS = 3;
+const TITLE_FRAME_INTERVAL_MS = 80;
+const TITLE_SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"] as const;
+const TITLE_DONE_TEXT = "🟢 yaho";
 
 // Blue-purple palette ported from Codex's Ultra effort ignition (effort_ignition.rs).
 type RGB = [number, number, number];
@@ -72,6 +75,12 @@ function textWidth(text: string): number {
 		width += characterWidth(character);
 	}
 	return width;
+}
+
+function getBaseTitle(pi: ExtensionAPI): string {
+	const cwd = process.cwd().split(/[\\/]/).filter(Boolean).at(-1) ?? "pi";
+	const session = pi.getSessionName();
+	return session ? `π - ${session} - ${cwd}` : `π - ${cwd}`;
 }
 
 // --- Startup greeting (theme-colored, unchanged) ---
@@ -310,6 +319,50 @@ class MaxEffect {
 export default function cialloMax(pi: ExtensionAPI): void {
 	let observedLevel: string | undefined;
 	let animating = false;
+	let titleTimer: ReturnType<typeof setInterval> | undefined;
+	let titleFrameIndex = 0;
+
+	const stopTitleAnimation = (): void => {
+		if (titleTimer) {
+			clearInterval(titleTimer);
+			titleTimer = undefined;
+		}
+		titleFrameIndex = 0;
+	};
+
+	const setTitleSafely = (ui: ExtensionUIContext, title: string): boolean => {
+		try {
+			ui.setTitle(title);
+			return true;
+		} catch {
+			// A session replacement or reload can invalidate the captured UI context.
+			return false;
+		}
+	};
+
+	const startTitleAnimation = (ui: ExtensionUIContext): void => {
+		stopTitleAnimation();
+
+		const renderNextFrame = (): boolean => {
+			const frame = TITLE_SPINNER_FRAMES[titleFrameIndex % TITLE_SPINNER_FRAMES.length]!;
+			titleFrameIndex++;
+			if (!setTitleSafely(ui, `${frame} ${getBaseTitle(pi)}`)) {
+				stopTitleAnimation();
+				return false;
+			}
+			return true;
+		};
+
+		// Render immediately so short runs still show activity in the title bar.
+		if (renderNextFrame()) {
+			titleTimer = setInterval(renderNextFrame, TITLE_FRAME_INTERVAL_MS);
+		}
+	};
+
+	const showCompletedTitle = (ui: ExtensionUIContext): void => {
+		stopTitleAnimation();
+		setTitleSafely(ui, `${TITLE_DONE_TEXT} · ${getBaseTitle(pi)}`);
+	};
 
 	// Startup greeting: a durable, TUI-only entry at the top of the transcript.
 	// Using an entry (not the header) lets CialloMax coexist with header/footer extensions.
@@ -365,7 +418,21 @@ export default function cialloMax(pi: ExtensionAPI): void {
 		}
 	});
 
+	// Keep the spinner running across tool calls, retries and auto-compaction.
+	pi.on("agent_start", (_event, ctx) => {
+		if (!ctx.hasUI) return;
+		startTitleAnimation(ctx.ui);
+	});
+
+	// agent_end can be followed by an automatic retry or queued continuation;
+	// agent_settled is the point at which Pi has genuinely finished the run.
+	pi.on("agent_settled", (_event, ctx) => {
+		if (!ctx.hasUI || !ctx.isIdle()) return;
+		showCompletedTitle(ctx.ui);
+	});
+
 	pi.on("session_shutdown", (_event, ctx) => {
+		stopTitleAnimation();
 		if (animating) {
 			animating = false;
 			try {
@@ -375,6 +442,9 @@ export default function cialloMax(pi: ExtensionAPI): void {
 			}
 		}
 		observedLevel = undefined;
+		if (ctx.hasUI) {
+			setTitleSafely(ctx.ui, getBaseTitle(pi));
+		}
 	});
 
 	// Preview the Max effect without changing the active thinking level.
